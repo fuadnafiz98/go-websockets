@@ -28,8 +28,14 @@ func main() {
 }
 ```
 
-Let's start from basic `http.ListenAndServe(addr, handler)` this takes an address and a handler. Handler is like the router.
-for now keep the handler to `nil` and give it an address. It returns a err, if there is any. We have to check the error and thats it!
+Let's start from basic.
+
+`http.ListenAndServe(addr, handler)`
+
+this takes an address and a handler. Handler is like the router.
+for now keep the handler to `nil` and give it an address. This function starts the server or returns an error.
+
+We have to check the error and thats it!
 we have a running server!
 
 ```golang
@@ -53,9 +59,13 @@ func main() {
 Now run the file `go run main.go`
 
 Now curl the server `curl localhost:8888`
-which will show `404 page not found` which is good as we didn't setup any handler!
+
+which will show `404 page not found`
+
+which is good as we didn't setup any handler!
 
 Now we have to write a handler function.
+
 But before that we can declare the http server in a bit different way which will help us a lot in future.
 
 ```golang
@@ -84,8 +94,10 @@ func main() {
 This is the same thing as before, we are declaring a `server` instance which is a pointer to a http server. And we are modifiying the Server struct of the http. (I am not sure how to explain this, will modify this later).
 
 Now we can put the address, along with some other configuration of the server.
-We can also see there is a function in the `http.Server` struct called `Handler` which is default `http.DefaultServerMux` by default but we can implement our own ServerMux.
-for implementing that we have to delare it
+
+We can also see there is a function in the `http.Server` struct called `Handler` which is `http.DefaultServerMux` by default but we can implement our own ServerMux.
+
+For implementing that we have to create a new ServerMux `http.NewServeMux()`
 
 ```golang
 func main() {
