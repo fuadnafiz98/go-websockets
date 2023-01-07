@@ -1,6 +1,8 @@
-# Golang WebServer
+# Golang WebSockets
 
-It's a repo supposed to be about websockets. But before starting I have to learn how the regular web server works on golang :/
+## Creating a basic web server in golang
+
+It's a repo supposed to be about websockets. But before starting I have to learn how the regular web server works on golang 😕
 
 Let's create a good old web server in golang
 
@@ -122,4 +124,50 @@ func main() {
 }
 ```
 
-Now in the `HandleFunc` we will declare the pattern `/` and write a `(req, res)` function like in node.js. here it just writes the byte 'HELLO'
+Now in the `HandleFunc` we will declare the pattern `/` and write a `(req, res)` function like in node.js. here it just writes the byte `HELLO`.
+
+Let's create a another path and return some json.
+
+Before returning the json, create a struct type. Struct type is a common way to delare type for a custom data type.
+
+```golang
+type Data struct {
+	Id       string `json:"id"`
+	Username string `json:"username"`
+}
+```
+
+The properties `struct` will start as uppercase and the optional `json` part is how you want to represent the entitiy when the data is exported in json.
+
+Add this `handlerFunc` before the root handler.
+
+```golang
+handler.HandleFunc("/data", func(w http.ResponseWriter, r *http.Request) {
+  data := &Data{
+    Id:       "98",
+    Username: "fuadnafiz98",
+  }
+  w.WriteHeader(http.StatusOK)
+  w.Header().Set("Content-Type", "application/json")
+  err := json.NewEncoder(w).Encode(data)
+  if err != nil {
+    fmt.Println(err)
+  }
+})
+```
+
+With that done, we can make a full CURD application with golang. Before doing that we have to learn how to extract the query parameters from the URL.
+
+That is also pretty easy
+
+```golang
+handler.HandleFunc("/books", func(w http.ResponseWriter, r *http.Request) {
+  id := r.URL.Query().Get("id")
+  w.Write([]byte("id is => " + id))
+})
+```
+
+So we have all the knowledge we have to build a CURD Application. One more thing missing is some sort of database.
+Let's learn **protobuf** and let's see if we can use it some way to store and retirve data.
+
+### Protocol Buffers
