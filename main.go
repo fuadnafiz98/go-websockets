@@ -4,6 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"google.golang.org/protobuf/proto"
+
+	book "github.com/fuadnafiz98/go-websockets/book"
 )
 
 type Data struct {
@@ -11,14 +15,31 @@ type Data struct {
 	Username string `json:"username"`
 }
 
+var DB_PATH string = "database.pb"
+
 func main() {
 	fmt.Println("Server running on 0.0.0.0:8888")
 
 	handler := http.NewServeMux()
 
 	handler.HandleFunc("/books", func(w http.ResponseWriter, r *http.Request) {
-		id := r.URL.Query().Get("id")
-		w.Write([]byte("id is => " + id))
+		switch r.Method {
+		case http.MethodGet:
+			book := &book.Book{
+				Id:     1,
+				Title:  "Make Time",
+				Author: "Un authored",
+			}
+			fmt.Println(proto.Marshal(book))
+
+		case http.MethodPost:
+		case http.MethodPatch:
+		case http.MethodDelete:
+			id := r.URL.Query().Get("id")
+			w.Write([]byte("id is => " + id))
+		default:
+			http.Error(w, "Method not allowd", http.StatusMethodNotAllowed)
+		}
 	})
 
 	handler.HandleFunc("/data", func(w http.ResponseWriter, r *http.Request) {

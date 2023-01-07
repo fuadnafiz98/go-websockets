@@ -167,6 +167,26 @@ handler.HandleFunc("/books", func(w http.ResponseWriter, r *http.Request) {
 })
 ```
 
+### Handling different http methods.
+
+```golang
+handler.HandleFunc("/books", func(w http.ResponseWriter, r *http.Request) {
+  switch r.Method {
+  case http.MethodGet:
+    id := r.URL.Query().Get("id")
+    w.Write([]byte("id is => " + id))
+  case http.MethodPost:
+    // perform POST
+  case http.MethodPatch:
+    // perform PATCH
+  case http.MethodDelete:
+    // perform DELETE
+  default:
+    http.Error(w, "Method not allowd", http.StatusMethodNotAllowed)
+  }
+})
+```
+
 So we have all the knowledge we have to build a CURD Application. One more thing missing is some sort of database.
 Let's learn **protobuf** and let's see if we can use it some way to store and retirve data.
 
@@ -180,7 +200,7 @@ Let's learn **protobuf** and let's see if we can use it some way to store and re
 
 Install the protoc from [here](https://github.com/protocolbuffers/protobuf/releases)
 
-Create a file `book.proto`
+Create a folder named `book` and inside a file `book.proto`
 
 Writer a simple proto file
 
@@ -200,6 +220,6 @@ message Book {
 
 Compile the proto file
 
-`protoc -I=. --go_out=. book.proto`
+`protoc -I=./book --go_out=./book/ book/book.proto`
 
 This will generate a `book.pb.go` file on the main project folder.
