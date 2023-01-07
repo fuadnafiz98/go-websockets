@@ -171,3 +171,35 @@ So we have all the knowledge we have to build a CURD Application. One more thing
 Let's learn **protobuf** and let's see if we can use it some way to store and retirve data.
 
 ### Protocol Buffers
+
+#### Resources
+
+- [https://developers.google.com/protocol-buffers/docs/gotutorial](https://developers.google.com/protocol-buffers/docs/gotutorial)
+- [https://www.youtube.com/watch?v=\_jQ3i_fyqGA&ab_channel=justforfunc%3AProgramminginGo](https://www.youtube.com/watch?v=_jQ3i_fyqGA&ab_channel=justforfunc%3AProgramminginGo)
+-
+
+Install the protoc from [here](https://github.com/protocolbuffers/protobuf/releases)
+
+Create a file `book.proto`
+
+Writer a simple proto file
+
+```proto
+syntax = "proto3";
+package main;
+
+option go_package = ".";
+
+
+message Book {
+  int64 id = 1;
+  string title = 2;
+  string author = 3;
+}
+```
+
+Compile the proto file
+
+`protoc -I=. --go_out=. book.proto`
+
+This will generate a `book.pb.go` file on the main project folder.
