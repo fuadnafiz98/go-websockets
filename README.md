@@ -252,7 +252,16 @@ server := &http.Server{
 
 Here we are declaring the server instance with some default settings. We have to provide a `Handler` which will be basically responsible for all the routing and stuff.
 
-Now this `Handler` will be anything as long as it implements the `ServeHTTP` function. So for the websocket server, we will create a `WebsocketServer` that implements the `ServeHTTP` function.
+Now this `Handler` will be anything as long as it implements the `ServeHTTP` function.(Why??? Glad you asked)
+If you go to the documentation for the [`Handler`](https://pkg.go.dev/net/http#Handler) you will find this
+
+```golang
+type Handler interface {
+	ServeHTTP(ResponseWriter, *Request)
+}
+```
+
+So the `Handler` interface has the `ServeHTTP` function that you have to implement if you want to use this interface. So for the websocket server, we will create a `WebsocketServer` that implements the `ServeHTTP` function.
 
 Let's go to the `socket.go` file and as usual we will create a struct type for different objects.
 
