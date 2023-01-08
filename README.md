@@ -6,11 +6,34 @@
 
 ![basic-websocket-demo](./static/go-websocket-basic-demo.gif)
 
-## Resources
+## The current Implementation contains
 
-- [yet another ws liberary](https://github.com/gobwas/ws)
-- [https://sookocheff.com/post/networking/how-do-websockets-work/](https://sookocheff.com/post/networking/how-do-websockets-work/)
--
+- single chat server
+- random userid for each new user
+- notification for adding and leaving users.
+- time for sending message.
+
+### Starting to extend the current code base 🚀
+
+- [x] build a UI
+- [x] add a `uuid` for each subscriber
+- [ ] plan how to implement chat rooms. 💬
+- [ ] add a redis adapter to handle multiple server
+
+### Adding Redis
+
+Possible system architechture
+
+![redis-arch](./static/redis-arch.png)
+
+#### The blueprint for adding chat rooms. 💬
+
+- user clicks on a chat room
+  - sends a POST on `publish` with `user_id` and `room_id`
+- user sends a message from a chat room
+  - sends a POST on `publish` with `user_id`, `room_id` and `message`.
+  - server broadcasts message to only one room.
+  - how server will broadcast to only one channel?
 
 ## Let's build the damn websocket server. 😤
 
@@ -187,12 +210,6 @@ func (ss *socketServer) susbscribe(ctx context.Context, ws *websocket.Conn) erro
 ```
 
 TODO: Write detail explanation for the code.
-
-### Starting to extend the current code base 🚀
-
-- [x] build a UI
-- [ ] add a `uuid` for each subscriber
-- [ ]
 
 ## Creating a basic web server in golang
 
@@ -417,3 +434,9 @@ Compile the proto file
 `protoc -I=./book --go_out=./book/ book/book.proto`
 
 This will generate a `book.pb.go` file on the main project folder.
+
+## Resources
+
+- [yet another ws liberary](https://github.com/gobwas/ws)
+- [https://sookocheff.com/post/networking/how-do-websockets-work/](https://sookocheff.com/post/networking/how-do-websockets-work/)
+- [https://github.com/dafinley/websocket/blob/master/examples/chat/chat.go](https://github.com/dafinley/websocket/blob/master/examples/chat/chat.go)
