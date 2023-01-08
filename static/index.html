@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>go-websockets</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="flex h-screen w-full flex-col bg-zinc-900">
+    <div id="messages" class="top-0 flex w-full flex-1 flex-col divide-y-2 divide-zinc-900 overflow-scroll">
+    </div>
+    <div class="flex h-16 w-full justify-between">
+      <input id="input"
+        class="font-xl flex-1 bg-zinc-800 p-8 text-zinc-100 focus:outline-none focus:ring focus:ring-zinc-800"
+        placeholder="Type someting..." />
+      <button id="submit" type="submit"
+        class="grid w-48 place-content-center bg-green-400 text-xl font-bold hover:bg-green-500 focus:bg-green-500 focus:outline-none focus:ring focus:ring-green-800 active:bg-green-500">Send</button>
+    </div>
+  </div>
+  <script src="main.js"></script>
+</body>
+
+</html>
