@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"log"
@@ -9,12 +10,29 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"golang.org/x/time/rate"
 	"nhooyr.io/websocket"
 )
 
+type messageType string
+
+const (
+	WELCOME_MESSAGE messageType = "WELCOME_MESSAGE"
+	LEAVE_MESSAGE   messageType = "LEAVE_MESSAGE"
+	MESSAGE         messageType = "MESSAGE"
+)
+
+type message struct {
+	Message     string      `json:"message"`
+	MessageType messageType `json:"messageType"`
+	Created     time.Time   `json:"created"`
+}
+
 type subscriber struct {
-	msgs      chan []byte
+	id        string
+	username  string
+	msgs      chan message
 	closeSlow func()
 }
 
@@ -42,34 +60,39 @@ func newSocketServer() *socketServer {
 }
 
 func (ss *socketServer) addSubscriber(sub *subscriber) {
-	log.Println("Adding subscrber!")
+	log.Printf("Adding subscrber: %v", sub.username)
 	ss.subscriberMutex.Lock()
 	ss.subscribers[sub] = struct{}{}
 	ss.subscriberMutex.Unlock()
 }
 
 func (ss *socketServer) deleteSubscriber(sub *subscriber) {
-	log.Println("Deleting subscrber!")
+	log.Printf("Deleting subscrber: %v", sub.username)
 	ss.subscriberMutex.Lock()
 	delete(ss.subscribers, sub)
 	ss.subscriberMutex.Unlock()
+	ss.publish([]byte("User Logged out: "+sub.username), LEAVE_MESSAGE)
 }
 
-func writeTimeout(ctx context.Context, timeout time.Duration, ws *websocket.Conn, msg []byte) error {
+func writeTimeout(ctx context.Context, timeout time.Duration, ws *websocket.Conn, msg message) error {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	return ws.Write(ctx, websocket.MessageText, msg)
+	messageData, _ := json.Marshal(msg)
+	return ws.Write(ctx, websocket.MessageText, messageData)
 }
 
 func (ss *socketServer) susbscribe(ctx context.Context, ws *websocket.Conn) error {
 	ctx = ws.CloseRead(ctx)
 	sub := &subscriber{
-		msgs: make(chan []byte, ss.subscriberMessageBuffer),
+		id:       uuid.New().String(),
+		username: genRandomUsername(),
+		msgs:     make(chan message, ss.subscriberMessageBuffer),
 		closeSlow: func() {
 			ws.Close(websocket.StatusPolicyViolation, "Server too slow to handle load")
 		},
 	}
 	ss.addSubscriber(sub)
+	ss.publish([]byte("Welcome new user: "+sub.username), WELCOME_MESSAGE)
 	defer ss.deleteSubscriber(sub)
 
 	for {
@@ -102,16 +125,22 @@ func (ss *socketServer) susbscribeHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (ss *socketServer) publish(msg []byte) {
+func (ss *socketServer) publish(msg []byte, _messageType messageType) {
 	ss.subscriberMutex.Lock()
 	defer ss.subscriberMutex.Unlock()
 
 	ss.publishLimiter.Wait(context.Background()) // what is happening here 😫
 
+	messageData := &message{
+		Message:     string(msg),
+		MessageType: _messageType,
+		Created:     time.Now(),
+	}
+
 	for s := range ss.subscribers {
 		select {
-		case s.msgs <- msg:
-			log.Println("Sending message ...", string(msg))
+		case s.msgs <- *messageData:
+			log.Println("Sending message ...", messageData.Message)
 		default:
 			go s.closeSlow()
 		}
@@ -130,7 +159,7 @@ func (ss *socketServer) publishHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ss.publish(msg)
+	ss.publish(msg, MESSAGE)
 	w.WriteHeader(http.StatusAccepted)
 }
 
