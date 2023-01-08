@@ -1,5 +1,11 @@
 # Golang WebSockets
 
+## Resources
+
+- [yet another ws liberary](https://github.com/gobwas/ws)
+- [https://sookocheff.com/post/networking/how-do-websockets-work/](https://sookocheff.com/post/networking/how-do-websockets-work/)
+-
+
 ## Creating a basic web server in golang
 
 It's a repo supposed to be about websockets. But before starting I have to learn how the regular web server works on golang 😕
@@ -223,3 +229,170 @@ Compile the proto file
 `protoc -I=./book --go_out=./book/ book/book.proto`
 
 This will generate a `book.pb.go` file on the main project folder.
+
+### Let's take a break from the proto stuff and build the damn websocket server. 😤
+
+#### References:
+
+- [https://github.com/nhooyr/websocket/blob/master/examples/chat/main.go](https://github.com/nhooyr/websocket/blob/master/examples/chat/main.go)
+
+#### Code Explanations
+
+In this part, I will try to explain each part of the code as I write.
+
+First of all, let's look into this part of code
+
+```golang
+server := &http.Server{
+  // Handler: ,
+  ReadTimeout:  time.Second * 10,
+  WriteTimeout: time.Second * 10,
+}
+```
+
+Here we are declaring the server instance with some default settings. We have to provide a `Handler` which will be basically responsible for all the routing and stuff.
+
+Now this `Handler` will be anything as long as it implements the `ServeHTTP` function. So for the websocket server, we will create a `WebsocketServer` that implements the `ServeHTTP` function.
+
+Let's go to the `socket.go` file and as usual we will create a struct type for different objects.
+
+We will have a `subscriber` struct with channel of messages and a function to close the connection if the load is too high
+
+```golang
+type subscriber struct {
+	msgs chan []byte
+	closeSlow func()
+}
+```
+
+and a `SocketServer` struct type
+
+```golang
+type SocketServer struct {
+	subscriberMessageBuffer int // how many messages a subscriber can have
+	publishLimiter          *rate.Limiter // still need to learn what a limiter is.
+	logf                    func(f string, v ...interface{}) // Don't know what this means
+	serveMux                http.ServeMux // this is basically the router we know
+	subscriberMutex         sync.Mutex // this is a mutex to prevent the race conditions
+	subscribers             map[*subscriber]struct{} // the list of subscribers.
+}
+```
+
+Let's create a `newSocketServer` (I think this is equavalent to `new` keyword in OOPs
+
+```golang
+func newSocketServer() *SocketServer {
+	socketServer := &SocketServer{
+		subscriberMessageBuffer: 16,
+		publishLimiter:          rate.NewLimiter(rate.Every(time.Millisecond*100), 8),
+		logf:                    log.Printf,
+		subscribers:             make(map[*subscriber]struct{}),
+	}
+	socketServer.serveMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Hello Chat!"))
+	})
+	return socketServer
+}
+```
+
+As usual we are defining `socketServer` with the settings and also in the serveMux we are defining the routes.
+
+Now if you set the `Handler` to the socketServer. You will notice this error
+
+```golang
+socketServer := newSocketServer()
+
+server := &http.Server{
+  Handler:      socketServer,
+  ReadTimeout:  time.Second * 10,
+  WriteTimeout: time.Second * 10,
+}
+```
+
+```bash
+cannot use socketServer (variable of type *SocketServer) as http.Handler value in struct literal: *SocketServer does not implement http.Handler (missing method ServeHTTP)compilerInvalidIfaceAssign
+```
+
+Let's implement the `ServeHTTP`.
+
+```golang
+func (_socketServer *socketServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	_socketServer.serveMux.ServeHTTP(w, r)
+}
+```
+
+Now the error is gone. We can run the code again. This time we have to include both files.
+
+`go run main.go socket.go` or `go run *.go`
+
+You can see the server is running and if you curl this time. You can see the message `Hello Chat`!.
+
+Now we have to write two routes. One for subscribing new User (`/subscribe`) and one for publishing messages (`/publish`).
+
+Let's start with `/subscribe` as it will intruduce (finally) the websockets into the field.
+
+A new handler
+
+```golang
+func newSocketServer() *socketServer {
+  // ...
+	// _socketServer.serveMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// w.WriteHeader(http.StatusOK)
+		// w.Write([]byte("Hello Chat!"))
+	// })
+	_socketServer.serveMux.HandleFunc("/subscribe", _socketServer.susbscribeHandler)
+	return _socketServer
+}
+```
+
+Defining the `subscribeHandler`.
+
+```golang
+func (ss *socketServer) susbscribeHandler(w http.ResponseWriter, r *http.Request) {
+	ws, err := websocket.Accept(w, r, nil)
+	if err != nil {
+		ss.logf("%v", err)
+		return
+	}
+	defer ws.Close(websocket.StatusInternalError, "Closed in defer")
+	err = ss.susbscribe(r.Context(), ws)
+	if errors.Is(err, context.Canceled) {
+		return
+	}
+	if err != nil {
+		ss.logf("%v", err)
+		return
+	}
+}
+```
+
+Which requires `susbcribe`
+
+```golang
+func (ss *socketServer) susbscribe(ctx context.Context, ws *websocket.Conn) error {
+	ctx = ws.CloseRead(ctx)
+	sub := &subscriber{
+		msgs: make(chan []byte, ss.subscriberMessageBuffer),
+		closeSlow: func() {
+			ws.Close(websocket.StatusPolicyViolation, "Server too slow to handle load")
+		},
+	}
+	ss.addSubscriber(sub)
+	defer ss.deleteSubscriber(sub)
+
+	for {
+		select {
+		case msg := <-sub.msgs:
+			err := writeTimeout(ctx, time.Second*5, ws, msg)
+			if err != nil {
+				return err
+			}
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+}
+```
+
+TODO: Write detail explanation for the code.

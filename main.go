@@ -1,72 +1,43 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
+	"context"
+	"log"
+	"net"
 	"net/http"
-
-	"google.golang.org/protobuf/proto"
-
-	book "github.com/fuadnafiz98/go-websockets/book"
+	"time"
 )
 
-type Data struct {
-	Id       string `json:"id"`
-	Username string `json:"username"`
-}
-
-var DB_PATH string = "database.pb"
-
-func main() {
-	fmt.Println("Server running on 0.0.0.0:8888")
-
-	handler := http.NewServeMux()
-
-	handler.HandleFunc("/books", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			book := &book.Book{
-				Id:     1,
-				Title:  "Make Time",
-				Author: "Un authored",
-			}
-			fmt.Println(proto.Marshal(book))
-
-		case http.MethodPost:
-		case http.MethodPatch:
-		case http.MethodDelete:
-			id := r.URL.Query().Get("id")
-			w.Write([]byte("id is => " + id))
-		default:
-			http.Error(w, "Method not allowd", http.StatusMethodNotAllowed)
-		}
-	})
-
-	handler.HandleFunc("/data", func(w http.ResponseWriter, r *http.Request) {
-		data := &Data{
-			Id:       "98",
-			Username: "fuadnafiz98",
-		}
-		w.WriteHeader(http.StatusOK)
-		w.Header().Set("Content-Type", "application/json")
-		err := json.NewEncoder(w).Encode(data)
-		if err != nil {
-			fmt.Println(err)
-		}
-	})
-
-	handler.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("HELLO"))
-	})
-
-	server := &http.Server{
-		Addr:    "0.0.0.0:8888",
-		Handler: handler,
+func run() error {
+	listener, err := net.Listen("tcp", "0.0.0.0:8888")
+	if err != nil {
+		return err
 	}
 
-	err := server.ListenAndServe()
+	log.Printf("Listening on http://%v", listener.Addr())
+
+	socketServer := newSocketServer()
+
+	server := &http.Server{
+		Handler:      socketServer,
+		ReadTimeout:  time.Second * 10,
+		WriteTimeout: time.Second * 10,
+	}
+
+	err = server.Serve(listener)
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Printf("Server Initialization Error: %v\n", err)
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	return server.Shutdown(ctx)
+}
+
+func main() {
+	err := run()
+	if err != nil {
+		log.Fatal(err)
 	}
 }
