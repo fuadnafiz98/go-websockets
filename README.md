@@ -230,7 +230,7 @@ Compile the proto file
 
 This will generate a `book.pb.go` file on the main project folder.
 
-### Let's take a break from the proto stuff and build the damn websocket server. 😤
+## Let's take a break from the proto stuff and build the damn websocket server. 😤
 
 #### References:
 
