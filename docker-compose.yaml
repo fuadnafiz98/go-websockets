@@ -1,0 +1,21 @@
+version: "3.7"
+
+services:
+  caddy:
+    container_name: go-caddy
+    build: ./caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+  server:
+    container_name: go-websockets-server
+    build: .
+    restart: always
+    ports:
+      - "8888:8888"
+  server2:
+    container_name: go-websockets-server-2
+    build: .
+    restart: always
+    ports:
+      - "8889:8888"
