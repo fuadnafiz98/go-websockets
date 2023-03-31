@@ -19,6 +19,10 @@
 - [x] add a `uuid` for each subscriber
 - [ ] plan how to implement chat rooms. 💬
 - [ ] add a redis adapter to handle multiple server
+  - [ ] build docker image for go server
+  - [ ] setup caddy
+  - [ ] setup redis
+  - [ ] write docker-compose
 
 ### Adding Redis
 
