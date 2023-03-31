@@ -1,0 +1,8 @@
+:80
+
+reverse_proxy * {
+  to server:8888
+  to server2:8888
+
+  lb_policy round_robin
+}
