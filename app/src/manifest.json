@@ -1,0 +1,7 @@
+{
+  "name": "go-chat",
+  "short_name": "go-chat",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait"
+}
