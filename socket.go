@@ -52,7 +52,7 @@ func newSocketServer() *socketServer {
 		logf:                    log.Printf,
 		subscribers:             make(map[*subscriber]struct{}),
 	}
-	_socketServer.serveMux.Handle("/", http.FileServer(http.Dir("./static")))
+	_socketServer.serveMux.Handle("/", http.FileServer(http.Dir("./app/build")))
 
 	_socketServer.serveMux.HandleFunc("/subscribe", _socketServer.susbscribeHandler)
 	_socketServer.serveMux.HandleFunc("/publish", _socketServer.publishHandler)

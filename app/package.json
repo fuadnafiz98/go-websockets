@@ -4,9 +4,11 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "build": "cross-env NODE_OPTIONS=--openssl-legacy-provider preact build",
+    "build": "yarn tw:build && yarn pt:build",
+    "pt:build": "cross-env NODE_OPTIONS=--openssl-legacy-provider preact build",
     "serve": "sirv build --cors --single",
     "tw:watch": "npx tailwindcss -i ./src/style/tailwind.css -o ./src/style/index.css --watch",
+    "tw:build": "npx tailwindcss -i ./src/style/tailwind.css -o ./src/style/index.css --minify",
     "watch": "cross-env NODE_OPTIONS=--openssl-legacy-provider preact watch",
     "dev": "concurrently \"yarn tw:watch\" \"yarn watch\"",
     "lint": "eslint src"
